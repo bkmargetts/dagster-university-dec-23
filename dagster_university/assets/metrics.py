@@ -13,7 +13,8 @@ from . import constants
 
 
 @asset(
-  deps=["taxi_trips", "taxi_zones"]
+  deps=["taxi_trips", "taxi_zones"],
+  group_name="metrics"
 )
 def manhattan_stats(database: DuckDBResource):
     query = """
@@ -40,6 +41,7 @@ def manhattan_stats(database: DuckDBResource):
 
 @asset(
  deps=["manhattan_stats"],
+ group_name="metrics"
 )
 def manhattan_map():
     trips_by_zone = gpd.read_file(constants.MANHATTAN_STATS_FILE_PATH)
@@ -61,7 +63,8 @@ def manhattan_map():
 
 @asset(
     deps=["taxi_trips"],
-    partitions_def=weekly_partition
+    partitions_def=weekly_partition,
+    group_name="metrics"
 )
 def trips_by_week(context, database: DuckDBResource):
     """

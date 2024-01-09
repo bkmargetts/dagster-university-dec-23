@@ -5,7 +5,8 @@ from ..partitions import monthly_partition
 from dagster import asset
 
 @asset(
-	partitions_def=monthly_partition
+	partitions_def=monthly_partition,
+    group_name="raw_files"
 )
 def taxi_trips_file(context):
     """
@@ -21,7 +22,9 @@ def taxi_trips_file(context):
     with open(constants.TAXI_TRIPS_TEMPLATE_FILE_PATH.format(month_to_fetch), "wb") as output_file:
         output_file.write(raw_trips.content)
 
-@asset
+@asset(
+	group_name="raw_files"
+)
 def taxi_zones_file():
     raw_zones = requests.get('https://data.cityofnewyork.us/api/views/755u-8jsi/rows.csv?accessType=DOWNLOAD')
 
@@ -32,6 +35,7 @@ def taxi_zones_file():
 @asset(
   deps=["taxi_trips_file"],
   partitions_def=monthly_partition,
+  group_name="ingested"
 )
 def taxi_trips(context, database: DuckDBResource):
     """
@@ -63,7 +67,8 @@ def taxi_trips(context, database: DuckDBResource):
 
 
 @asset(
-	deps=["taxi_zones_file"]
+	deps=["taxi_zones_file"],
+    group_name = "ingested"
 )
 def taxi_zones(database: DuckDBResource):
 		"""
