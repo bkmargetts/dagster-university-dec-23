@@ -1,8 +1,9 @@
 import requests
+import pandas as pd
 from dagster_duckdb import DuckDBResource
 from . import constants
 from ..partitions import monthly_partition
-from dagster import asset
+from dagster import asset, MetadataValue
 
 @asset(
 	partitions_def=monthly_partition,
@@ -22,14 +23,22 @@ def taxi_trips_file(context):
     with open(constants.TAXI_TRIPS_TEMPLATE_FILE_PATH.format(month_to_fetch), "wb") as output_file:
         output_file.write(raw_trips.content)
 
+    num_rows = len(pd.read_parquet(constants.TAXI_TRIPS_TEMPLATE_FILE_PATH.format(month_to_fetch)))
+    context.add_output_metadata({'Number of records':MetadataValue.int(num_rows)})
+
+
 @asset(
 	group_name="raw_files"
 )
-def taxi_zones_file():
+def taxi_zones_file(context):
     raw_zones = requests.get('https://data.cityofnewyork.us/api/views/755u-8jsi/rows.csv?accessType=DOWNLOAD')
 
     with open(constants.TAXI_ZONES_FILE_PATH, "wb") as output_file:
         output_file.write(raw_zones.content)
+    
+    num_rows = MetadataValue.int(len(pd.read_csv(constants.TAXI_ZONES_FILE_PATH)))
+    context.add_output_metadata({'Number of records': num_rows})
+
         
 
 @asset(
